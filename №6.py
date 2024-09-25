@@ -76,7 +76,7 @@ class Sale(Base):
 
 
 def create_tables(engine):
-    # Base.metadata.drop_all(engine)
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
 
@@ -84,7 +84,7 @@ DSN = "postgresql://postgres:postgres@localhost:5432/book"
 engine = sqlalchemy.create_engine(DSN)
 create_tables(engine)
 
-Session = sessionmaker(bind=engine)
+Session = sessionmaker(bind = engine)
 session = Session()
 
 
@@ -125,11 +125,26 @@ sale_4 = Sale(4, 299, '02.11.2022', 4, 1)
 session.add_all([sale_1, sale_2, sale_3, sale_4])
 session.commit()
 
-
-prompt = input()
-result = session.query(Book, Shop, Sale).filter(Publisher.name == prompt).filter(Publisher.id_publisher == Book.id_publisher).filter(Book.id_publisher == Stock.id_book).filter(Stock.id_shop == Shop.id_shop).filter(Stock.id_stock == Sale.id_stock).all()
-for i in result:
-    print(f'{i[0]} | {i[1]} | {i[2]}')
+def get_shops(search = input('введите id или имя')):
+    search = search
+    if search.isnumeric():
+        result = session.query(Book.title, Shop.name, Sale.price, Sale.date_sale) \
+        .join(Publisher, Publisher.id_publisher == Book.id_publisher) \
+        .join(Stock, Stock.id_book == Book.id_book) \
+            .join(Shop, Shop.id_shop == Stock.id_shop) \
+            .join(Sale, Sale.id_stock == Stock.id_stock) \
+            .filter(search == Publisher.id_publisher).all()
+        for book, shop, price, date in result:
+            print(f'{book: <40} | {shop: <10} | {price: <8} | {date}')
+    else:
+        results = session.query(Book.title, Shop.name, Sale.price, Sale.date_sale) \
+            .join(Publisher, Publisher.id == Book.id_publisher) \
+            .join(Stock, Stock.id_book == Book.id) \
+            .join(Shop, Shop.id == Stock.id_shop) \
+            .join(Sale, Sale.id_stock == Stock.id) \
+            .filter(search == Publisher.name).all()
+        for book, shop, price, date in results:
+            print(f'{book: <40} | {shop: <10} | {price: <8} | {date}')
 
 
 session.close()
